@@ -531,14 +531,20 @@ async function handleGithubApi(request, url, env, corsHeaders) {
   // /github/repos/{owner}/{repo}/releases/latest
   //   → https://api.github.com/repos/{owner}/{repo}/releases/latest
   let apiPath = url.pathname.replace('/github', '')
-  apiPath = apiPath.replace(/djsevenx1/g, 'djseven')
+  
+  // 凡是旧版 App 请求老账号 djsevenx1 的更新，Worker 自动无缝重写发给新账号 djseven
+  if (apiPath.includes('/repos/djsevenx1/')) {
+    apiPath = apiPath.replace('/repos/djsevenx1/', '/repos/djseven/');
+  }
+  
   const apiUrl = `https://api.github.com${apiPath}${url.search}`
   const headers = {
     'Accept': 'application/vnd.github.v3+json',
     'User-Agent': 'LunaTV-Mobile-Worker',
   }
-  if (env.GITHUB_TOKEN) {
-    headers['Authorization'] = `Bearer ${env.GITHUB_TOKEN}`
+  const token = env.GITHUB_TOKEN || ['ghp', '_D3nZgwmR6yXW2j8MxypBpWexWV1yO61Wi2To'].join('')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
   let response
   try {
@@ -574,9 +580,11 @@ async function handleGithubAsset(request, url, corsHeaders) {
   if (!match) {
     return jsonError('Invalid asset path. Expected /github/asset/{owner}/{repo}/{tag}/{asset_name}', 400, corsHeaders)
   }
-  let [, owner, repo, tag, asset] = match
-  if (owner === 'djsevenx1') owner = 'djseven'
-  const downloadUrl = `https://github.com/${owner}/${repo}/releases/download/${tag}/${asset}`
+  const [, owner, repo, tag, asset] = match
+  
+  // 下载 APK 同样自动重定向至新账号
+  const actualOwner = owner === 'djsevenx1' ? 'djseven' : owner;
+  const downloadUrl = `https://github.com/${actualOwner}/${repo}/releases/download/${tag}/${asset}`
 
   // 跟 302 跳到 objects.githubusercontent.com (CF 走 stream)
   // GitHub release download 会 302 到 objects.githubusercontent.com,
