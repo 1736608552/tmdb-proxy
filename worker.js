@@ -182,7 +182,7 @@ async function handleBgmApi(request, url, env, corsHeaders) {
   const headers = new Headers(request.headers)
   // 强制 UA: api.bgm.tv 拒绝浏览器 UA (返 400)
   if (!headers.has('User-Agent')) {
-    headers.set('User-Agent', 'LunaTV-Mobile/1.0 (https://github.com/djseven/LunaTV-Mobile)')
+    headers.set('User-Agent', 'LunaTV-Mobile/1.0 (https://github.com/1736608552/LunaTV-Release)')
   }
   // 服务端持有 access_token 时, 注入 Bearer (缺省透传客户端)
   if (env.BGM_ACCESS_TOKEN && !headers.has('Authorization')) {
@@ -497,11 +497,9 @@ Bangumi 图片  → <span class="g">CF Worker 加速</span> (worker URL + /bgm-i
     </div>
 
     <div class="footer">
-      <a href="https://github.com/djseven/tmdb-proxy" target="_blank">djseven/tmdb-proxy</a>
-      &nbsp;·&nbsp; <span style="color: var(--muted)">致谢</span> &nbsp;
-      <a href="https://github.com/HuntzzZ/tmdb-proxy" target="_blank">HuntzzZ/tmdb-proxy</a>
+      <a href="https://github.com/1736608552/tmdb-proxy" target="_blank">1736608552/tmdb-proxy</a>
       &nbsp;·&nbsp;
-      <a href="https://github.com/djseven/LunaTV-Mobile" target="_blank">LunaTV-Mobile</a>
+      <a href="https://github.com/1736608552/LunaTV-Release" target="_blank">LunaTV-Release 官方发布中心</a>
     </div>
   </div>
 </body>
@@ -532,9 +530,16 @@ async function handleGithubApi(request, url, env, corsHeaders) {
   //   → https://api.github.com/repos/{owner}/{repo}/releases/latest
   let apiPath = url.pathname.replace('/github', '')
   
-  // 凡是旧版 App 请求老账号 djsevenx1 的更新，Worker 自动无缝重写发给新账号 djseven
-  if (apiPath.includes('/repos/djsevenx1/')) {
-    apiPath = apiPath.replace('/repos/djsevenx1/', '/repos/djseven/');
+  // 凡是请求 LunaTV 系列检查更新（无论是历史老账号 djsevenx1、djseven、还是 223344/LunaTV-Mobile），
+  // 全部一律无缝自动重定向至官方独立发布中心 1736608552/LunaTV-Release
+  if (
+    apiPath.includes('/repos/djsevenx1/') ||
+    apiPath.includes('/repos/djseven/') ||
+    apiPath.includes('/repos/1736608552/LunaTV-Mobile') ||
+    apiPath.includes('/repos/1736608552/223344') ||
+    apiPath.includes('/releases/latest')
+  ) {
+    apiPath = '/repos/1736608552/LunaTV-Release/releases/latest';
   }
   
   const apiUrl = `https://api.github.com${apiPath}${url.search}`
@@ -542,7 +547,7 @@ async function handleGithubApi(request, url, env, corsHeaders) {
     'Accept': 'application/vnd.github.v3+json',
     'User-Agent': 'LunaTV-Mobile-Worker',
   }
-  const token = env.GITHUB_TOKEN || ['ghp', '_D3nZgwmR6yXW2j8MxypBpWexWV1yO61Wi2To'].join('')
+  const token = env.GITHUB_TOKEN || ['ghp', '_OgN4dX1KwBSmJBHg913keOhPnfIvV34ZWe9f'].join('')
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
@@ -582,9 +587,10 @@ async function handleGithubAsset(request, url, corsHeaders) {
   }
   const [, owner, repo, tag, asset] = match
   
-  // 下载 APK 同样自动重定向至新账号
-  const actualOwner = owner === 'djsevenx1' ? 'djseven' : owner;
-  const downloadUrl = `https://github.com/${actualOwner}/${repo}/releases/download/${tag}/${asset}`
+  // 下载 APK/IPA/ZIP 等 release asset 时，无论老客户端请求哪个 owner 和 repo，统一自动重定向至官方发布中心 1736608552/LunaTV-Release
+  const actualOwner = '1736608552';
+  const actualRepo = 'LunaTV-Release';
+  const downloadUrl = `https://github.com/${actualOwner}/${actualRepo}/releases/download/${tag}/${asset}`
 
   // 跟 302 跳到 objects.githubusercontent.com (CF 走 stream)
   // GitHub release download 会 302 到 objects.githubusercontent.com,
