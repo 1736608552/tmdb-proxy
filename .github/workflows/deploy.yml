@@ -4,16 +4,17 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: "${{ secrets.CLOUDFLARE_API_TOKEN != '' }}"
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: tmdb
-          directory: .
+          command: pages deploy . --project-name=tmdb
